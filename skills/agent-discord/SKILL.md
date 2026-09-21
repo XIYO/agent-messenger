@@ -388,8 +388,9 @@ agent-discord file info <channel-id> <file-id>
 
 ### Emoji Commands
 
-Needs the Manage Expressions permission. Name: letters, digits and underscores
-only, 2–32 characters. Image at most 256KB.
+Creating needs `CREATE_GUILD_EXPRESSIONS`; deleting someone else's expression
+needs `MANAGE_GUILD_EXPRESSIONS`; listing needs neither. Name: letters, digits
+and underscores only, 2–32 characters. Image at most 256KB.
 
 ```bash
 # List custom emoji
@@ -405,8 +406,9 @@ agent-discord emoji delete <server-id> <emoji-id>
 
 ### Sticker Commands
 
-Needs the Manage Expressions permission. PNG or APNG at exactly 320x320, or a
-Lottie JSON, at most 512KB. Name 2–30 characters.
+Same permissions as emoji. PNG, APNG or GIF at exactly 320x320, or a Lottie
+JSON, at most 512KB. Name 2–30 characters. Lottie needs a `VERIFIED` or
+`PARTNERED` guild.
 
 ```bash
 # List custom stickers

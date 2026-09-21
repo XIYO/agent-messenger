@@ -187,7 +187,11 @@ agent-discord file info <channel-id> <file-id>
 
 ### Emoji Commands
 
-Manage a server's custom emoji. Requires the Manage Expressions permission.
+Manage a server's custom emoji.
+
+Listing needs no special permission. Creating needs `CREATE_GUILD_EXPRESSIONS`.
+Deleting an expression you created needs either `CREATE_GUILD_EXPRESSIONS` or
+`MANAGE_GUILD_EXPRESSIONS`; deleting someone else's needs `MANAGE_GUILD_EXPRESSIONS`.
 
 ```bash
 # List custom emoji, with static and animated counts
@@ -206,7 +210,11 @@ An emoji name may only contain letters, digits and underscores, and must be
 
 ### Sticker Commands
 
-Manage a server's custom stickers. Requires the Manage Expressions permission.
+Manage a server's custom stickers.
+
+Listing needs no special permission. Creating needs `CREATE_GUILD_EXPRESSIONS`.
+Deleting an expression you created needs either `CREATE_GUILD_EXPRESSIONS` or
+`MANAGE_GUILD_EXPRESSIONS`; deleting someone else's needs `MANAGE_GUILD_EXPRESSIONS`.
 
 ```bash
 # List custom stickers
@@ -226,8 +234,9 @@ agent-discord sticker delete <server-id> <sticker-id>
 - `--name <name>` - Sticker name, 2–30 characters (defaults to the filename)
 - `--description <text>` - Sticker description
 
-A sticker image must be a PNG or APNG at exactly 320x320, or a Lottie JSON,
-and at most 512KB.
+A sticker image must be a PNG, APNG or GIF at exactly 320x320, or a Lottie
+JSON, and at most 512KB. Animated stickers are capped at 5 seconds. Lottie
+stickers upload only on guilds with the `VERIFIED` or `PARTNERED` feature.
 
 > **Note:** Discord raises both allowances with the server's boost level —
 > static emoji 50/100/150/250 and stickers 5/15/30/60 for boost tiers 0–3.

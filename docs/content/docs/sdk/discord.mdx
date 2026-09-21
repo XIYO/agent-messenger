@@ -157,7 +157,9 @@ These methods take image bytes rather than a path, so the caller decides how the
 image is read. Discord refuses an upload whose multipart part carries no media
 type, so the filename is passed alongside the bytes and used to derive it.
 
-Both endpoints need the Manage Expressions permission. `getServer(guildId)`
+Listing needs no special permission. Creating needs `CREATE_GUILD_EXPRESSIONS`.
+Deleting an expression you created needs either `CREATE_GUILD_EXPRESSIONS` or
+`MANAGE_GUILD_EXPRESSIONS`; deleting someone else's needs `MANAGE_GUILD_EXPRESSIONS`. `getServer(guildId)`
 returns `premium_tier` with the guild's `emojis` and `stickers`, which is how
 you find out how many slots remain.
 

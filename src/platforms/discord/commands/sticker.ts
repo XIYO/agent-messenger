@@ -8,6 +8,7 @@ import { formatOutput } from '@/shared/utils/output'
 
 import { DiscordClient } from '../client'
 import { DiscordCredentialManager } from '../credential-manager'
+import { validateStickerName } from '../expression-names'
 
 export async function listAction(serverId: string, options: { pretty?: boolean }): Promise<void> {
   try {
@@ -61,6 +62,13 @@ export async function createAction(
     const filePath = resolve(path)
     const filename = basename(filePath)
     const name = options.name ?? basename(filename, extname(filename))
+
+    const nameError = validateStickerName(name)
+    if (nameError) {
+      console.log(formatOutput({ error: nameError }, options.pretty))
+      process.exit(1)
+    }
+
     const image = new Uint8Array(await readFile(filePath))
 
     const sticker = await client.createSticker(
@@ -110,7 +118,7 @@ export const stickerCommand = new Command('sticker')
     new Command('create')
       .description('Upload a custom sticker to a server')
       .argument('<server-id>', 'Server ID')
-      .argument('<file>', 'Image file (PNG or APNG at exactly 320x320, or Lottie JSON, max 512KB)')
+      .argument('<file>', 'Image file (PNG, APNG or GIF at exactly 320x320, or Lottie JSON, max 512KB)')
       .requiredOption('--tags <emoji>', 'Unicode emoji this sticker relates to')
       .option('--name <name>', 'Sticker name (defaults to the filename without extension)')
       .option('--description <text>', 'Sticker description')

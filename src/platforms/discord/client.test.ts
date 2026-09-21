@@ -1171,6 +1171,16 @@ describe('DiscordClient', () => {
       expect(sticker.id).toBe('s1')
     })
 
+    it('createSticker sends an APNG as image/png', async () => {
+      const client = await new DiscordClient().login({ token: 'test-token' })
+      mockResponse({ id: 's2', name: 'potato_02', tags: 'potato' })
+
+      await client.createSticker('g1', { name: 'potato_02', tags: 'potato' }, png, 'potato_02.apng')
+
+      const form = fetchCalls[0].options?.body as FormData
+      expect((form.get('file') as File).type).toBe('image/png')
+    })
+
     it('deleteSticker issues a DELETE for the sticker', async () => {
       const client = await new DiscordClient().login({ token: 'test-token' })
       mockResponse(null, 204)

@@ -8,6 +8,7 @@ import { formatOutput } from '@/shared/utils/output'
 
 import { DiscordClient } from '../client'
 import { DiscordCredentialManager } from '../credential-manager'
+import { validateEmojiName } from '../expression-names'
 
 export async function listAction(serverId: string, options: { pretty?: boolean }): Promise<void> {
   try {
@@ -59,6 +60,13 @@ export async function createAction(
     const filePath = resolve(path)
     const filename = basename(filePath)
     const name = options.name ?? basename(filename, extname(filename))
+
+    const nameError = validateEmojiName(name)
+    if (nameError) {
+      console.log(formatOutput({ error: nameError }, options.pretty))
+      process.exit(1)
+    }
+
     const image = new Uint8Array(await readFile(filePath))
 
     const emoji = await client.createEmoji(serverId, name, image, filename)

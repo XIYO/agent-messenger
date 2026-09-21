@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, mock, spyOn, it } from 'bun:test'
-import { mkdtemp, writeFile } from 'node:fs/promises'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -12,6 +12,7 @@ let clientCreateEmojiSpy: ReturnType<typeof spyOn>
 let clientDeleteEmojiSpy: ReturnType<typeof spyOn>
 let credManagerLoadSpy: ReturnType<typeof spyOn>
 let tempDir: string
+const originalLog = console.log
 
 function pngBytes(width: number, height: number, padding = 0): Uint8Array {
   const bytes = new Uint8Array(24 + padding)
@@ -53,7 +54,9 @@ beforeEach(async () => {
   })
 })
 
-afterEach(() => {
+afterEach(async () => {
+  console.log = originalLog
+  await rm(tempDir, { recursive: true, force: true })
   clientListEmojisSpy?.mockRestore()
   clientCreateEmojiSpy?.mockRestore()
   clientDeleteEmojiSpy?.mockRestore()
@@ -100,4 +103,19 @@ it('delete: removes the emoji by id', async () => {
 
   expect(clientDeleteEmojiSpy).toHaveBeenCalledWith('g1', 'e1')
   expect(consoleSpy.mock.calls[0][0]).toContain('"success":true')
+})
+
+it('create: rejects a hyphenated name without calling the API', async () => {
+  const consoleSpy = mock((_msg: string) => {})
+  console.log = consoleSpy
+  const exitSpy = spyOn(process, 'exit').mockImplementation(() => {
+    throw new Error('exit')
+  })
+  const path = await writeTempImage('potato-13.png', pngBytes(128, 128))
+
+  await expect(createAction('g1', path, { pretty: false })).rejects.toThrow('exit')
+
+  expect(clientCreateEmojiSpy).not.toHaveBeenCalled()
+  expect(consoleSpy.mock.calls[0][0]).toContain('letters, digits, underscores')
+  exitSpy.mockRestore()
 })

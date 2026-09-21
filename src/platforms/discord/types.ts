@@ -138,7 +138,10 @@ export interface DiscordSticker {
   name: string
   description?: string | null
   tags: string
-  format_type?: number
+  /** STANDARD = 1, GUILD = 2. */
+  type: number
+  /** PNG = 1, APNG = 2, LOTTIE = 3, GIF = 4. */
+  format_type: number
   available?: boolean
   guild_id?: string
   user?: DiscordUser

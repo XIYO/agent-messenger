@@ -104,6 +104,7 @@ const BASE_URL = 'https://discord.com/api/v10'
  */
 const EXPRESSION_CONTENT_TYPES: Record<string, string> = {
   png: 'image/png',
+  apng: 'image/png',
   jpg: 'image/jpeg',
   jpeg: 'image/jpeg',
   gif: 'image/gif',

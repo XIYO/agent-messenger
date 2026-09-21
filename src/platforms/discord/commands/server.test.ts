@@ -7,6 +7,7 @@ import { infoAction } from './server'
 let clientListServersSpy: ReturnType<typeof spyOn>
 let clientGetServerSpy: ReturnType<typeof spyOn>
 let credManagerLoadSpy: ReturnType<typeof spyOn>
+const originalLog = console.log
 let credManagerSetCurrentServerSpy: ReturnType<typeof spyOn>
 let credManagerGetCurrentServerSpy: ReturnType<typeof spyOn>
 
@@ -47,6 +48,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  console.log = originalLog
   clientListServersSpy?.mockRestore()
   clientGetServerSpy?.mockRestore()
   credManagerLoadSpy?.mockRestore()
