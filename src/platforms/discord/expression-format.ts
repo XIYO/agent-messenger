@@ -88,14 +88,30 @@ export function sniffFormat(bytes: Uint8Array): ExpressionFormat | null {
  * A Lottie animation always carries a `layers` array. Checking that one field
  * rejects an arbitrary JSON document without guessing at the rest of the
  * schema, which would risk refusing animations a newer exporter produces.
+ *
+ * Returns the reason the document cannot be one, or null when it may be. The
+ * two faults are reported apart: a file can hold a layers array and still be
+ * broken, and "no layers array" would send its author looking in the wrong
+ * place.
  */
-export function looksLikeLottie(bytes: Uint8Array): boolean {
+export function lottieError(bytes: Uint8Array): string | null {
+  let text: string
   try {
-    const parsed: unknown = JSON.parse(new TextDecoder().decode(bytes))
-    return typeof parsed === 'object' && parsed !== null && Array.isArray((parsed as { layers?: unknown }).layers)
+    // A lenient decoder substitutes U+FFFD for a malformed byte, leaving JSON
+    // that parses while the file itself is not valid UTF-8.
+    text = new TextDecoder('utf-8', { fatal: true }).decode(bytes)
   } catch {
-    // Malformed JSON is not an animation. Discord would refuse it anyway, but
-    // with a message that names neither the file nor the reason.
-    return false
+    return 'JSON file is not valid UTF-8'
   }
+
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(text)
+  } catch {
+    return 'JSON file is not valid JSON'
+  }
+
+  const hasLayers =
+    typeof parsed === 'object' && parsed !== null && Array.isArray((parsed as { layers?: unknown }).layers)
+  return hasLayers ? null : 'JSON file is not a Lottie animation (no layers array)'
 }

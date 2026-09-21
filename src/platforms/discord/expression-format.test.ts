@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test'
 
-import { EMOJI_FORMATS, STICKER_FORMATS, looksLikeLottie, mediaTypeOf, sniffFormat } from './expression-format'
+import { EMOJI_FORMATS, STICKER_FORMATS, lottieError, mediaTypeOf, sniffFormat } from './expression-format'
 
 const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13])
 const gif = new Uint8Array([...Buffer.from('GIF89a'), 0, 0, 0, 0])
@@ -69,31 +69,39 @@ describe('mediaTypeOf', () => {
   })
 })
 
-describe('looksLikeLottie', () => {
+describe('lottieError', () => {
   const bytesOf = (text: string) => new Uint8Array(Buffer.from(text))
 
   it('accepts a document with a layers array', () => {
-    expect(looksLikeLottie(bytesOf('{"v":"5.5.7","fr":30,"layers":[{"ty":4}]}'))).toBe(true)
+    expect(lottieError(bytesOf('{"v":"5.5.7","fr":30,"layers":[{"ty":4}]}'))).toBeNull()
   })
 
   it('accepts an animation with no layers yet', () => {
-    expect(looksLikeLottie(bytesOf('{"v":"5.5.7","layers":[]}'))).toBe(true)
+    expect(lottieError(bytesOf('{"v":"5.5.7","layers":[]}'))).toBeNull()
   })
 
   it('rejects an empty object', () => {
     // Discord answers `{}` uploaded as a sticker with a bare "Invalid Asset".
-    expect(looksLikeLottie(bytesOf('{}'))).toBe(false)
+    expect(lottieError(bytesOf('{}'))).toContain('layers')
   })
 
   it('rejects JSON that is not an animation', () => {
-    expect(looksLikeLottie(bytesOf('{"name":"package","version":"1.0.0"}'))).toBe(false)
+    expect(lottieError(bytesOf('{"name":"package","version":"1.0.0"}'))).toContain('layers')
   })
 
   it('rejects a document whose layers is not an array', () => {
-    expect(looksLikeLottie(bytesOf('{"layers":"nope"}'))).toBe(false)
+    expect(lottieError(bytesOf('{"layers":"nope"}'))).toContain('layers')
   })
 
   it('rejects malformed JSON without throwing', () => {
-    expect(looksLikeLottie(bytesOf('{"layers":['))).toBe(false)
+    expect(lottieError(bytesOf('{"layers":['))).toContain('valid JSON')
+  })
+
+  it('rejects a document carrying invalid UTF-8', () => {
+    // A lenient decoder turns the stray byte into U+FFFD, leaving JSON that
+    // parses and passes — and Discord then refuses it as "Invalid Asset".
+    const broken = new Uint8Array([...Buffer.from('{"layers":[],"nm":"'), 0xff, ...Buffer.from('"}')])
+    // The layers array is present, so the message must name the real fault.
+    expect(lottieError(broken)).toContain('UTF-8')
   })
 })
