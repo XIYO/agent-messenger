@@ -145,7 +145,7 @@ it('info: reports the boost tier, expression counts and remaining sticker slots'
     premium_tier: 2,
     premium_subscription_count: 8,
     emojis: [{ id: 'e1', name: 'potato_01', animated: false }],
-    stickers: [{ id: 's1', name: 'potato_01', tags: 'potato' }],
+    stickers: [{ id: 's1', name: 'potato_01', tags: 'potato', type: 2, format_type: 1 }],
   })
   const consoleSpy = mock((_msg: string) => {})
   console.log = consoleSpy

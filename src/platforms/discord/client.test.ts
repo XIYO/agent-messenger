@@ -1139,7 +1139,7 @@ describe('DiscordClient', () => {
 
     it('listStickers requests the guild sticker collection', async () => {
       const client = await new DiscordClient().login({ token: 'test-token' })
-      mockResponse([{ id: 's1', name: 'potato_01', tags: 'potato' }])
+      mockResponse([{ id: 's1', name: 'potato_01', tags: 'potato', type: 2, format_type: 1 }])
 
       const stickers = await client.listStickers('g1')
 
@@ -1150,7 +1150,7 @@ describe('DiscordClient', () => {
 
     it('createSticker posts multipart fields alongside the file', async () => {
       const client = await new DiscordClient().login({ token: 'test-token' })
-      mockResponse({ id: 's1', name: 'potato_01', tags: 'potato' })
+      mockResponse({ id: 's1', name: 'potato_01', tags: 'potato', type: 2, format_type: 1 })
 
       const sticker = await client.createSticker(
         'g1',
@@ -1173,7 +1173,7 @@ describe('DiscordClient', () => {
 
     it('createSticker sends an APNG as image/png', async () => {
       const client = await new DiscordClient().login({ token: 'test-token' })
-      mockResponse({ id: 's2', name: 'potato_02', tags: 'potato' })
+      mockResponse({ id: 's2', name: 'potato_02', tags: 'potato', type: 2, format_type: 2 })
 
       await client.createSticker('g1', { name: 'potato_02', tags: 'potato' }, png, 'potato_02.apng')
 

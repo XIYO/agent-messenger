@@ -35,13 +35,15 @@ beforeEach(async () => {
   tempDir = await mkdtemp(join(tmpdir(), 'discord-sticker-'))
 
   clientListStickersSpy = spyOn(DiscordClient.prototype, 'listStickers').mockResolvedValue([
-    { id: 's1', name: 'potato_01', tags: 'potato' },
+    { id: 's1', name: 'potato_01', tags: 'potato', type: 2, format_type: 1 },
   ])
 
   clientCreateStickerSpy = spyOn(DiscordClient.prototype, 'createSticker').mockResolvedValue({
     id: 's9',
     name: 'potato_13',
     tags: 'potato',
+    type: 2,
+    format_type: 1,
   })
 
   clientDeleteStickerSpy = spyOn(DiscordClient.prototype, 'deleteSticker').mockResolvedValue(undefined)
