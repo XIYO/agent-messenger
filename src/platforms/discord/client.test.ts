@@ -1099,4 +1099,84 @@ describe('DiscordClient', () => {
       expect(result.totalUnread).toBe(7)
     })
   })
+  describe('expressions', () => {
+    const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47])
+
+    it('listEmojis requests the guild emoji collection', async () => {
+      const client = await new DiscordClient().login({ token: 'test-token' })
+      mockResponse([{ id: 'e1', name: 'potato_01', animated: false }])
+
+      const emojis = await client.listEmojis('g1')
+
+      expect(fetchCalls[0].url).toBe('https://discord.com/api/v10/guilds/g1/emojis')
+      expect(fetchCalls[0].options?.method).toBe('GET')
+      expect(emojis[0].name).toBe('potato_01')
+    })
+
+    it('createEmoji posts the image as a base64 data URI', async () => {
+      const client = await new DiscordClient().login({ token: 'test-token' })
+      mockResponse({ id: 'e1', name: 'potato_01', animated: false })
+
+      const emoji = await client.createEmoji('g1', 'potato_01', png, 'image/png')
+
+      expect(fetchCalls[0].url).toBe('https://discord.com/api/v10/guilds/g1/emojis')
+      expect(fetchCalls[0].options?.method).toBe('POST')
+      const body = JSON.parse(fetchCalls[0].options?.body as string)
+      expect(body.name).toBe('potato_01')
+      expect(body.image).toBe(`data:image/png;base64,${Buffer.from(png).toString('base64')}`)
+      expect(emoji.id).toBe('e1')
+    })
+
+    it('deleteEmoji issues a DELETE for the emoji', async () => {
+      const client = await new DiscordClient().login({ token: 'test-token' })
+      mockResponse(null, 204)
+
+      await client.deleteEmoji('g1', 'e1')
+
+      expect(fetchCalls[0].url).toBe('https://discord.com/api/v10/guilds/g1/emojis/e1')
+      expect(fetchCalls[0].options?.method).toBe('DELETE')
+    })
+
+    it('listStickers requests the guild sticker collection', async () => {
+      const client = await new DiscordClient().login({ token: 'test-token' })
+      mockResponse([{ id: 's1', name: 'potato_01', tags: 'potato' }])
+
+      const stickers = await client.listStickers('g1')
+
+      expect(fetchCalls[0].url).toBe('https://discord.com/api/v10/guilds/g1/stickers')
+      expect(fetchCalls[0].options?.method).toBe('GET')
+      expect(stickers[0].name).toBe('potato_01')
+    })
+
+    it('createSticker posts multipart fields alongside the file', async () => {
+      const client = await new DiscordClient().login({ token: 'test-token' })
+      mockResponse({ id: 's1', name: 'potato_01', tags: 'potato' })
+
+      const sticker = await client.createSticker(
+        'g1',
+        { name: 'potato_01', description: 'a potato', tags: 'potato' },
+        png,
+        'potato_01.png',
+      )
+
+      expect(fetchCalls[0].url).toBe('https://discord.com/api/v10/guilds/g1/stickers')
+      expect(fetchCalls[0].options?.method).toBe('POST')
+      const form = fetchCalls[0].options?.body as FormData
+      expect(form.get('name')).toBe('potato_01')
+      expect(form.get('description')).toBe('a potato')
+      expect(form.get('tags')).toBe('potato')
+      expect((form.get('file') as File).name).toBe('potato_01.png')
+      expect(sticker.id).toBe('s1')
+    })
+
+    it('deleteSticker issues a DELETE for the sticker', async () => {
+      const client = await new DiscordClient().login({ token: 'test-token' })
+      mockResponse(null, 204)
+
+      await client.deleteSticker('g1', 's1')
+
+      expect(fetchCalls[0].url).toBe('https://discord.com/api/v10/guilds/g1/stickers/s1')
+      expect(fetchCalls[0].options?.method).toBe('DELETE')
+    })
+  })
 })

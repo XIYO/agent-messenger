@@ -1,0 +1,131 @@
+import { afterEach, beforeEach, expect, mock, spyOn, it } from 'bun:test'
+import { mkdtemp, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
+import { DiscordClient } from '../client'
+import { DiscordCredentialManager } from '../credential-manager'
+import { createAction, deleteAction, listAction } from './sticker'
+
+class ProcessExit extends Error {
+  constructor(readonly code?: string | number | null) {
+    super(`process.exit(${code})`)
+  }
+}
+
+let clientListStickersSpy: ReturnType<typeof spyOn>
+let clientCreateStickerSpy: ReturnType<typeof spyOn>
+let clientDeleteStickerSpy: ReturnType<typeof spyOn>
+let credManagerLoadSpy: ReturnType<typeof spyOn>
+let processExitSpy: ReturnType<typeof spyOn>
+let tempDir: string
+
+function pngBytes(width: number, height: number, padding = 0): Uint8Array {
+  const bytes = new Uint8Array(24 + padding)
+  bytes.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], 0)
+  bytes.set([0x00, 0x00, 0x00, 0x0d], 8)
+  bytes.set([0x49, 0x48, 0x44, 0x52], 12)
+  const view = new DataView(bytes.buffer)
+  view.setUint32(16, width)
+  view.setUint32(20, height)
+  return bytes
+}
+
+async function writeTempImage(filename: string, bytes: Uint8Array): Promise<string> {
+  const path = join(tempDir, filename)
+  await writeFile(path, bytes)
+  return path
+}
+
+beforeEach(async () => {
+  tempDir = await mkdtemp(join(tmpdir(), 'discord-sticker-'))
+
+  clientListStickersSpy = spyOn(DiscordClient.prototype, 'listStickers').mockResolvedValue([
+    { id: 's1', name: 'potato_01', tags: 'potato' },
+  ])
+
+  clientCreateStickerSpy = spyOn(DiscordClient.prototype, 'createSticker').mockResolvedValue({
+    id: 's9',
+    name: 'potato_13',
+    tags: 'potato',
+  })
+
+  clientDeleteStickerSpy = spyOn(DiscordClient.prototype, 'deleteSticker').mockResolvedValue(undefined)
+
+  credManagerLoadSpy = spyOn(DiscordCredentialManager.prototype, 'load').mockResolvedValue({
+    token: 'test-token',
+    current_server: 'server-1',
+    servers: {},
+  })
+
+  processExitSpy = spyOn(process, 'exit').mockImplementation((code?: string | number | null) => {
+    throw new ProcessExit(code)
+  })
+})
+
+afterEach(() => {
+  clientListStickersSpy?.mockRestore()
+  clientCreateStickerSpy?.mockRestore()
+  clientDeleteStickerSpy?.mockRestore()
+  credManagerLoadSpy?.mockRestore()
+  processExitSpy?.mockRestore()
+})
+
+it('list: reports the guild stickers', async () => {
+  const consoleSpy = mock((_msg: string) => {})
+  console.log = consoleSpy
+
+  await listAction('g1', { pretty: false })
+
+  const output = consoleSpy.mock.calls[0][0]
+  expect(output).toContain('potato_01')
+  expect(output).toContain('"count":1')
+})
+
+it('create: uploads a 320x320 PNG with its multipart fields', async () => {
+  const consoleSpy = mock((_msg: string) => {})
+  console.log = consoleSpy
+  const path = await writeTempImage('potato_13.png', pngBytes(320, 320))
+
+  await createAction('g1', path, { tags: 'potato', description: 'a potato', pretty: false })
+
+  expect(clientCreateStickerSpy).toHaveBeenCalledWith(
+    'g1',
+    { name: 'potato_13', description: 'a potato', tags: 'potato' },
+    expect.any(Uint8Array),
+    'potato_13.png',
+  )
+  expect(consoleSpy.mock.calls[0][0]).toContain('potato_13')
+})
+
+it('create: requires --tags without calling the API', async () => {
+  const consoleSpy = mock((_msg: string) => {})
+  console.log = consoleSpy
+  const path = await writeTempImage('potato_13.png', pngBytes(320, 320))
+
+  await expect(createAction('g1', path, { pretty: false })).rejects.toThrow('process.exit(1)')
+
+  expect(clientCreateStickerSpy).not.toHaveBeenCalled()
+  expect(consoleSpy.mock.calls[0][0]).toContain('--tags')
+})
+
+it('create: rejects an image that is not 320x320 without calling the API', async () => {
+  const consoleSpy = mock((_msg: string) => {})
+  console.log = consoleSpy
+  const path = await writeTempImage('potato_13.png', pngBytes(408, 408))
+
+  await expect(createAction('g1', path, { tags: 'potato', pretty: false })).rejects.toThrow('process.exit(1)')
+
+  expect(clientCreateStickerSpy).not.toHaveBeenCalled()
+  expect(consoleSpy.mock.calls[0][0]).toContain('408x408')
+})
+
+it('delete: removes the sticker by id', async () => {
+  const consoleSpy = mock((_msg: string) => {})
+  console.log = consoleSpy
+
+  await deleteAction('g1', 's1', { pretty: false })
+
+  expect(clientDeleteStickerSpy).toHaveBeenCalledWith('g1', 's1')
+  expect(consoleSpy.mock.calls[0][0]).toContain('"success":true')
+})

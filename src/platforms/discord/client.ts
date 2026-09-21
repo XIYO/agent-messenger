@@ -5,6 +5,7 @@ import { DiscordSearchIndexNotReadyResponseSchema, DiscordSearchResponseSchema }
 import type {
   DiscordChannel,
   DiscordDMChannel,
+  DiscordEmoji,
   DiscordFile,
   DiscordGuild,
   DiscordGuildMember,
@@ -16,6 +17,7 @@ import type {
   DiscordRole,
   DiscordSearchOptions,
   DiscordSearchResult,
+  DiscordSticker,
   DiscordUnreadDM,
   DiscordUnreadDMsResult,
   DiscordUnreadMention,
@@ -382,6 +384,51 @@ export class DiscordClient {
       }
     }
     return files
+  }
+
+  async listEmojis(guildId: string): Promise<DiscordEmoji[]> {
+    return this.request<DiscordEmoji[]>('GET', `/guilds/${guildId}/emojis`)
+  }
+
+  async createEmoji(
+    guildId: string,
+    name: string,
+    image: Uint8Array,
+    contentType: string,
+    roles: string[] = [],
+  ): Promise<DiscordEmoji> {
+    return this.request<DiscordEmoji>('POST', `/guilds/${guildId}/emojis`, {
+      name,
+      image: `data:${contentType};base64,${Buffer.from(image).toString('base64')}`,
+      roles,
+    })
+  }
+
+  async deleteEmoji(guildId: string, emojiId: string): Promise<void> {
+    await this.request<void>('DELETE', `/guilds/${guildId}/emojis/${emojiId}`)
+  }
+
+  async listStickers(guildId: string): Promise<DiscordSticker[]> {
+    return this.request<DiscordSticker[]>('GET', `/guilds/${guildId}/stickers`)
+  }
+
+  async createSticker(
+    guildId: string,
+    fields: { name: string; description?: string; tags: string },
+    image: Uint8Array,
+    filename: string,
+  ): Promise<DiscordSticker> {
+    const formData = new FormData()
+    formData.append('name', fields.name)
+    formData.append('description', fields.description ?? '')
+    formData.append('tags', fields.tags)
+    formData.append('file', new Blob([image]), filename)
+
+    return this.requestFormData<DiscordSticker>(`/guilds/${guildId}/stickers`, formData)
+  }
+
+  async deleteSticker(guildId: string, stickerId: string): Promise<void> {
+    await this.request<void>('DELETE', `/guilds/${guildId}/stickers/${stickerId}`)
   }
 
   async listDMChannels(): Promise<DiscordDMChannel[]> {
