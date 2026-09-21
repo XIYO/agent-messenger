@@ -5,6 +5,9 @@ const EMOJI_NAME_MAX = 32
 const EMOJI_MAX_BYTES = 256 * 1024
 const EMOJI_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.gif', '.webp']
 
+const STICKER_NAME_MIN = 2
+const STICKER_NAME_MAX = 30
+
 const STICKER_MAX_BYTES = 512 * 1024
 const STICKER_EXTENSIONS = ['.png', '.json']
 const STICKER_SIDE = 320
@@ -38,6 +41,18 @@ export function validateEmojiName(name: string): string | null {
   }
   if (!EMOJI_NAME_PATTERN.test(name)) {
     return `Emoji name may only contain letters, digits, underscores: "${name}"`
+  }
+  return null
+}
+
+export function validateStickerName(name: string): string | null {
+  // Discord answers a name outside this range with a bare "Invalid Form Body",
+  // which says nothing about which sticker in a batch was rejected or why.
+  if (name.length < STICKER_NAME_MIN) {
+    return `Sticker name must be at least ${STICKER_NAME_MIN} characters: "${name}"`
+  }
+  if (name.length > STICKER_NAME_MAX) {
+    return `Sticker name must be at most ${STICKER_NAME_MAX} characters: "${name}"`
   }
   return null
 }

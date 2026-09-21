@@ -8,7 +8,7 @@ import { formatOutput } from '@/shared/utils/output'
 
 import { DiscordClient } from '../client'
 import { DiscordCredentialManager } from '../credential-manager'
-import { validateStickerImage } from '../expression-validation'
+import { validateStickerImage, validateStickerName } from '../expression-validation'
 
 async function authenticate(options: { pretty?: boolean }): Promise<DiscordClient> {
   const credManager = new DiscordCredentialManager()
@@ -59,6 +59,9 @@ export async function createAction(
 ): Promise<void> {
   const filename = basename(filePath)
   const name = options.name ?? basename(filename, extname(filename))
+
+  const nameError = validateStickerName(name)
+  if (nameError) fail(nameError, options)
 
   if (!options.tags) {
     fail('A sticker needs --tags with the unicode emoji it relates to.', options)

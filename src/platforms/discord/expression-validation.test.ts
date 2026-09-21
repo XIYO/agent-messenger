@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'bun:test'
 
-import { readPngSize, validateEmojiImage, validateEmojiName, validateStickerImage } from './expression-validation'
+import {
+  readPngSize,
+  validateEmojiImage,
+  validateEmojiName,
+  validateStickerImage,
+  validateStickerName,
+} from './expression-validation'
 
 function pngBytes(width: number, height: number, padding = 0): Uint8Array {
   const bytes = new Uint8Array(24 + padding)
@@ -73,5 +79,20 @@ describe('validateStickerImage', () => {
 
   it('accepts a Lottie JSON without checking dimensions', () => {
     expect(validateStickerImage('potato_13.json', new Uint8Array([0x7b, 0x7d]))).toBeNull()
+  })
+})
+
+describe('validateStickerName', () => {
+  it('accepts a two-character name', () => {
+    expect(validateStickerName('빼액')).toBeNull()
+  })
+
+  it('rejects a single character, naming the minimum', () => {
+    // Discord answers a one-character sticker name with a bare "Invalid Form Body".
+    expect(validateStickerName('흥')).toContain('2')
+  })
+
+  it('rejects a name longer than 30 characters', () => {
+    expect(validateStickerName('가'.repeat(31))).toContain('30')
   })
 })
