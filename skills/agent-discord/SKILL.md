@@ -539,6 +539,9 @@ Common errors:
 - `Emoji name may only contain ...` / `... name must be at least 2 characters`:
   The name broke Discord's rules and was refused locally. Names come from the
   filename unless `--name` is given, so `potato-13.png` fails on the hyphen.
+- `JSON file is not a Lottie animation (no layers array)`: A JSON sticker with
+  no `layers` array. Refused locally; Discord answers such a file with a bare
+  `Invalid Asset`.
 - `Invalid Asset` (from Discord): The format was accepted locally but Discord
   refused the content itself — a truncated or corrupt image.
 - `Maximum number of stickers reached (N)` (from Discord): No slots left. Check

@@ -1212,6 +1212,16 @@ describe('DiscordClient', () => {
       expect(fetchCalls).toHaveLength(0)
     })
 
+    it('createSticker refuses JSON that is not a Lottie animation', async () => {
+      const client = await new DiscordClient().login({ token: 'test-token' })
+      const empty = new Uint8Array(Buffer.from('{}'))
+
+      await expect(
+        client.createSticker('g1', { name: 'potato_02', tags: 'potato' }, empty, 'potato_02.json'),
+      ).rejects.toThrow('not a Lottie animation')
+      expect(fetchCalls).toHaveLength(0)
+    })
+
     it('deleteSticker issues a DELETE for the sticker', async () => {
       const client = await new DiscordClient().login({ token: 'test-token' })
       mockResponse(null, 204)

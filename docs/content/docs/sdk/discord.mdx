@@ -162,9 +162,10 @@ declared type does not match its content with a bare `Invalid Asset`.
 Each endpoint takes its own formats: emoji accepts PNG, GIF, JPEG and WebP;
 stickers accept PNG (including APNG), GIF and a JSON document for Lottie.
 Bytes that are not one of the target endpoint's formats throw a `DiscordError`
-with code `unsupported_asset` before any request is made. A leading `{` proves
-only that the file is JSON — whether it is a usable Lottie is Discord's call,
-and Lottie uploads need a `VERIFIED` or `PARTNERED` guild.
+with code `unsupported_asset` before any request is made. A sticker's JSON must
+carry the `layers` array every Lottie animation has — `{}` is otherwise sent and
+refused as `Invalid Asset`. Whether the animation renders is Discord's call, and
+Lottie uploads need a `VERIFIED` or `PARTNERED` guild.
 
 Listing needs no special permission. Creating needs `CREATE_GUILD_EXPRESSIONS`.
 Deleting an expression you created needs either `CREATE_GUILD_EXPRESSIONS` or
@@ -416,6 +417,8 @@ const credentials = await manager.getCredentials()
 import type {
   DiscordGuild,
   DiscordChannel,
+  DiscordEmoji,
+  DiscordSticker,
   DiscordMessage,
   DiscordUser,
   DiscordDMChannel,

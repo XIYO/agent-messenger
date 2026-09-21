@@ -241,7 +241,8 @@ agent-discord sticker delete <server-id> <sticker-id>
 
 A sticker image must be a PNG, APNG, GIF or a Lottie JSON document, at most
 512KB — a JPEG or WebP is refused locally, since the sticker endpoint does not
-take them. Whether a JSON file is a usable Lottie is Discord's call.
+take them. A JSON sticker must carry a `layers` array, which every Lottie animation has;
+whether it actually renders is Discord's call.
 Animated stickers are capped at 5 seconds. Lottie stickers upload only on
 guilds with the `VERIFIED` or `PARTNERED` feature.
 

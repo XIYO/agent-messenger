@@ -7,9 +7,10 @@
  * filename is unverified input, so deriving the type from the extension means
  * one mislabelled file in a batch fails without saying which, or why.
  *
- * A leading `{` proves the file is JSON, not that it is a usable Lottie
- * animation — Discord decides that, and only on VERIFIED or PARTNERED guilds.
- * The format is named for what the signature actually shows.
+ * A leading `{` proves only that the file is JSON, so a sticker's JSON is
+ * checked for the one field every Lottie animation carries. Uploading `{}`
+ * otherwise comes back as a bare "Invalid Asset". Whether the animation renders
+ * is still Discord's call, and Lottie needs a VERIFIED or PARTNERED guild.
  *
  * This deliberately does not check dimensions. Discord's documentation gives
  * 320x320 for stickers, but a 408x408 PNG uploads and registers fine, so a
@@ -81,4 +82,20 @@ export function sniffFormat(bytes: Uint8Array): ExpressionFormat | null {
   }
 
   return null
+}
+
+/**
+ * A Lottie animation always carries a `layers` array. Checking that one field
+ * rejects an arbitrary JSON document without guessing at the rest of the
+ * schema, which would risk refusing animations a newer exporter produces.
+ */
+export function looksLikeLottie(bytes: Uint8Array): boolean {
+  try {
+    const parsed: unknown = JSON.parse(new TextDecoder().decode(bytes))
+    return typeof parsed === 'object' && parsed !== null && Array.isArray((parsed as { layers?: unknown }).layers)
+  } catch {
+    // Malformed JSON is not an animation. Discord would refuse it anyway, but
+    // with a message that names neither the file nor the reason.
+    return false
+  }
 }

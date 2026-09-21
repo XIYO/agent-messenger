@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test'
 
-import { EMOJI_FORMATS, STICKER_FORMATS, mediaTypeOf, sniffFormat } from './expression-format'
+import { EMOJI_FORMATS, STICKER_FORMATS, looksLikeLottie, mediaTypeOf, sniffFormat } from './expression-format'
 
 const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13])
 const gif = new Uint8Array([...Buffer.from('GIF89a'), 0, 0, 0, 0])
@@ -66,5 +66,34 @@ describe('mediaTypeOf', () => {
     expect(mediaTypeOf('jpeg')).toBe('image/jpeg')
     expect(mediaTypeOf('webp')).toBe('image/webp')
     expect(mediaTypeOf('json')).toBe('application/json')
+  })
+})
+
+describe('looksLikeLottie', () => {
+  const bytesOf = (text: string) => new Uint8Array(Buffer.from(text))
+
+  it('accepts a document with a layers array', () => {
+    expect(looksLikeLottie(bytesOf('{"v":"5.5.7","fr":30,"layers":[{"ty":4}]}'))).toBe(true)
+  })
+
+  it('accepts an animation with no layers yet', () => {
+    expect(looksLikeLottie(bytesOf('{"v":"5.5.7","layers":[]}'))).toBe(true)
+  })
+
+  it('rejects an empty object', () => {
+    // Discord answers `{}` uploaded as a sticker with a bare "Invalid Asset".
+    expect(looksLikeLottie(bytesOf('{}'))).toBe(false)
+  })
+
+  it('rejects JSON that is not an animation', () => {
+    expect(looksLikeLottie(bytesOf('{"name":"package","version":"1.0.0"}'))).toBe(false)
+  })
+
+  it('rejects a document whose layers is not an array', () => {
+    expect(looksLikeLottie(bytesOf('{"layers":"nope"}'))).toBe(false)
+  })
+
+  it('rejects malformed JSON without throwing', () => {
+    expect(looksLikeLottie(bytesOf('{"layers":['))).toBe(false)
   })
 })

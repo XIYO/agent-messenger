@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises'
 
 import type { ExpressionFormat } from './expression-format'
-import { EMOJI_FORMATS, STICKER_FORMATS, mediaTypeOf, sniffFormat } from './expression-format'
+import { EMOJI_FORMATS, STICKER_FORMATS, looksLikeLottie, mediaTypeOf, sniffFormat } from './expression-format'
 import { getDiscordHeaders } from './super-properties'
 import { DiscordSearchIndexNotReadyResponseSchema, DiscordSearchResponseSchema } from './types'
 import type {
@@ -403,6 +403,10 @@ export class DiscordClient {
         'unsupported_asset',
       )
     }
+    if (format === 'json' && !looksLikeLottie(image)) {
+      throw new DiscordError('JSON file is not a Lottie animation (no layers array)', 'unsupported_asset')
+    }
+
     return mediaTypeOf(format)
   }
 
