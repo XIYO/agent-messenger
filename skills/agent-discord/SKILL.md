@@ -241,6 +241,9 @@ agent-discord server switch <server-id>
 agent-discord server current
 ```
 
+`server info` also reports the boost tier with the custom emoji and sticker
+counts and the slots still free at that tier.
+
 ### User Commands
 
 ```bash
@@ -382,6 +385,45 @@ agent-discord file list <channel-id>
 # Get file info
 agent-discord file info <channel-id> <file-id>
 ```
+
+### Emoji Commands
+
+Needs the Manage Expressions permission. Name: letters, digits and underscores
+only, 2–32 characters. Image at most 256KB.
+
+```bash
+# List custom emoji
+agent-discord emoji list <server-id>
+
+# Upload (name defaults to the filename without extension)
+agent-discord emoji create <server-id> <path>
+agent-discord emoji create 1234567890123456789 ./potato.png --name potato
+
+# Delete
+agent-discord emoji delete <server-id> <emoji-id>
+```
+
+### Sticker Commands
+
+Needs the Manage Expressions permission. PNG or APNG at exactly 320x320, or a
+Lottie JSON, at most 512KB. Name 2–30 characters.
+
+```bash
+# List custom stickers
+agent-discord sticker list <server-id>
+
+# Upload — --tags is the unicode emoji the sticker relates to
+agent-discord sticker create <server-id> <path> --tags <emoji>
+agent-discord sticker create 1234567890123456789 ./potato.png --tags 🥔 --name potato
+
+# Delete
+agent-discord sticker delete <server-id> <sticker-id>
+```
+
+Check the remaining slots before a batch upload — `agent-discord server info
+<server-id>` reports the boost tier with the counts and free slots. Discord
+raises both allowances with the boost level: static emoji 50/100/150/250 and
+stickers 5/15/30/60 for tiers 0–3.
 
 ### Snapshot Command
 

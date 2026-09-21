@@ -125,6 +125,42 @@ const files = await client.listFiles(channelId)
 // → DiscordFile[]
 ```
 
+### Expressions (Emoji and Stickers)
+
+```typescript
+// List a guild's custom emoji
+const emojis = await client.listEmojis(guildId)
+// → DiscordEmoji[] { id, name, animated?, managed?, available?, roles?, user? }
+
+// Upload a custom emoji. The filename decides the media type Discord is sent.
+const bytes = new Uint8Array(await readFile('./potato.png'))
+const emoji = await client.createEmoji(guildId, 'potato', bytes, 'potato.png')
+
+await client.deleteEmoji(guildId, emoji.id)
+
+// List a guild's custom stickers
+const stickers = await client.listStickers(guildId)
+// → DiscordSticker[] { id, name, description?, tags, format_type?, ... }
+
+// Upload a custom sticker. `tags` is the unicode emoji it relates to.
+const sticker = await client.createSticker(
+  guildId,
+  { name: 'potato', description: 'A potato', tags: '🥔' },
+  bytes,
+  'potato.png',
+)
+
+await client.deleteSticker(guildId, sticker.id)
+```
+
+These methods take image bytes rather than a path, so the caller decides how the
+image is read. Discord refuses an upload whose multipart part carries no media
+type, so the filename is passed alongside the bytes and used to derive it.
+
+Both endpoints need the Manage Expressions permission. `getServer(guildId)`
+returns `premium_tier` with the guild's `emojis` and `stickers`, which is how
+you find out how many slots remain.
+
 ### Direct Messages
 
 ```typescript

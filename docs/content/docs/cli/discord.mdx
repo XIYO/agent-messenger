@@ -72,6 +72,9 @@ agent-discord server current
 agent-discord server info <server-id>
 ```
 
+`server info` reports the server's boost tier alongside its custom emoji and
+sticker counts and the slots still free at that tier.
+
 ## Commands
 
 ### Whoami Command
@@ -181,6 +184,55 @@ agent-discord file list <channel-id>
 # Get file info
 agent-discord file info <channel-id> <file-id>
 ```
+
+### Emoji Commands
+
+Manage a server's custom emoji. Requires the Manage Expressions permission.
+
+```bash
+# List custom emoji, with static and animated counts
+agent-discord emoji list <server-id>
+
+# Upload a custom emoji (name defaults to the filename without extension)
+agent-discord emoji create <server-id> <path>
+agent-discord emoji create 123456789 ./potato.png --name potato
+
+# Delete a custom emoji
+agent-discord emoji delete <server-id> <emoji-id>
+```
+
+An emoji name may only contain letters, digits and underscores, and must be
+2–32 characters. The image must be at most 256KB.
+
+### Sticker Commands
+
+Manage a server's custom stickers. Requires the Manage Expressions permission.
+
+```bash
+# List custom stickers
+agent-discord sticker list <server-id>
+
+# Upload a custom sticker
+agent-discord sticker create <server-id> <path> --tags <emoji>
+agent-discord sticker create 123456789 ./potato.png --tags 🥔 --name potato --description "A potato"
+
+# Delete a custom sticker
+agent-discord sticker delete <server-id> <sticker-id>
+```
+
+**Sticker Options:**
+
+- `--tags <emoji>` - Unicode emoji this sticker relates to (required)
+- `--name <name>` - Sticker name, 2–30 characters (defaults to the filename)
+- `--description <text>` - Sticker description
+
+A sticker image must be a PNG or APNG at exactly 320x320, or a Lottie JSON,
+and at most 512KB.
+
+> **Note:** Discord raises both allowances with the server's boost level —
+> static emoji 50/100/150/250 and stickers 5/15/30/60 for boost tiers 0–3.
+> `agent-discord server info <server-id>` reports the tier and the remaining
+> slots.
 
 ### Snapshot Command
 
