@@ -423,6 +423,12 @@ agent-discord sticker create 1234567890123456789 ./potato.png --tags 🥔 --name
 agent-discord sticker delete <server-id> <sticker-id>
 ```
 
+The media type is read from the file's bytes, not its extension, and each
+command takes only its endpoint's formats — emoji accepts PNG, GIF, JPEG and
+WebP; stickers accept PNG, APNG, GIF and a JSON document for Lottie. Anything
+else fails locally with a named error before a request is sent, so a batch says
+which file was wrong instead of returning a bare `Invalid Asset`.
+
 Check the remaining slots before a batch upload — `agent-discord server info
 <server-id>` reports the boost tier with the counts and free slots. Discord
 raises both allowances with the boost level: static emoji 50/100/150/250 and
@@ -525,6 +531,18 @@ Common errors:
 - `No current server set`: Run `server switch <id>` first
 - `Message not found`: Invalid message ID
 - `Unknown Channel`: Invalid channel ID
+- `File is not one of ...`: The file's bytes match no format this endpoint
+  takes. Refused locally — the request was never sent, so retrying is pointless.
+- `File is a <format>; this endpoint takes ...`: The file is a real image, but
+  not one this endpoint accepts — a JPEG or WebP sticker, or a JSON emoji.
+  Convert it; also refused locally.
+- `Emoji name may only contain ...` / `... name must be at least 2 characters`:
+  The name broke Discord's rules and was refused locally. Names come from the
+  filename unless `--name` is given, so `potato-13.png` fails on the hyphen.
+- `Invalid Asset` (from Discord): The format was accepted locally but Discord
+  refused the content itself — a truncated or corrupt image.
+- `Maximum number of stickers reached (N)` (from Discord): No slots left. Check
+  `server info` for the tier's allowance before a batch.
 
 ## Configuration
 
