@@ -5,6 +5,7 @@ import { DiscordSearchIndexNotReadyResponseSchema, DiscordSearchResponseSchema }
 import type {
   DiscordChannel,
   DiscordDMChannel,
+  DiscordEmoji,
   DiscordFile,
   DiscordGuild,
   DiscordGuildMember,
@@ -16,6 +17,7 @@ import type {
   DiscordRole,
   DiscordSearchOptions,
   DiscordSearchResult,
+  DiscordSticker,
   DiscordUnreadDM,
   DiscordUnreadDMsResult,
   DiscordUnreadMention,
@@ -95,6 +97,24 @@ interface RateLimitBucket {
 }
 
 const BASE_URL = 'https://discord.com/api/v10'
+
+/**
+ * Discord refuses an expression upload whose part carries no media type,
+ * answering "Invalid Asset". A Blob built from bytes alone has an empty type.
+ */
+const EXPRESSION_CONTENT_TYPES: Record<string, string> = {
+  png: 'image/png',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  gif: 'image/gif',
+  webp: 'image/webp',
+  json: 'application/json',
+}
+
+function contentTypeFor(filename: string): string {
+  const extension = filename.split('.').pop()?.toLowerCase() ?? ''
+  return EXPRESSION_CONTENT_TYPES[extension] ?? 'application/octet-stream'
+}
 const MAX_RETRIES = 3
 const BASE_BACKOFF_MS = 100
 const MAX_SEARCH_INDEX_RETRY_MS = 30_000
@@ -382,6 +402,51 @@ export class DiscordClient {
       }
     }
     return files
+  }
+
+  async listEmojis(guildId: string): Promise<DiscordEmoji[]> {
+    return this.request<DiscordEmoji[]>('GET', `/guilds/${guildId}/emojis`)
+  }
+
+  async createEmoji(
+    guildId: string,
+    name: string,
+    image: Uint8Array,
+    filename: string,
+    roles: string[] = [],
+  ): Promise<DiscordEmoji> {
+    return this.request<DiscordEmoji>('POST', `/guilds/${guildId}/emojis`, {
+      name,
+      image: `data:${contentTypeFor(filename)};base64,${Buffer.from(image).toString('base64')}`,
+      roles,
+    })
+  }
+
+  async deleteEmoji(guildId: string, emojiId: string): Promise<void> {
+    await this.request<void>('DELETE', `/guilds/${guildId}/emojis/${emojiId}`)
+  }
+
+  async listStickers(guildId: string): Promise<DiscordSticker[]> {
+    return this.request<DiscordSticker[]>('GET', `/guilds/${guildId}/stickers`)
+  }
+
+  async createSticker(
+    guildId: string,
+    fields: { name: string; description?: string; tags: string },
+    image: Uint8Array,
+    filename: string,
+  ): Promise<DiscordSticker> {
+    const formData = new FormData()
+    formData.append('name', fields.name)
+    formData.append('description', fields.description ?? '')
+    formData.append('tags', fields.tags)
+    formData.append('file', new Blob([image], { type: contentTypeFor(filename) }), filename)
+
+    return this.requestFormData<DiscordSticker>(`/guilds/${guildId}/stickers`, formData)
+  }
+
+  async deleteSticker(guildId: string, stickerId: string): Promise<void> {
+    await this.request<void>('DELETE', `/guilds/${guildId}/stickers/${stickerId}`)
   }
 
   async listDMChannels(): Promise<DiscordDMChannel[]> {
