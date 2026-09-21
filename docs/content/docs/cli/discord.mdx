@@ -208,9 +208,10 @@ agent-discord emoji delete <server-id> <emoji-id>
 An emoji name may only contain letters, digits and underscores, and must be
 2–32 characters. The image must be at most 256KB.
 
-The media type is read from the file's own bytes, not its extension. A file
-whose contents are not a PNG, GIF, JPEG, WebP or Lottie JSON is refused before
-the request, because Discord answers a mismatched part with `Invalid Asset`.
+The media type is read from the file's own bytes, not its extension, and each
+command accepts only what its endpoint takes — emoji accepts PNG, GIF, JPEG and
+WebP. Anything else is refused before the request, because Discord answers a
+mismatched part with a bare `Invalid Asset`.
 
 ### Sticker Commands
 
@@ -238,7 +239,9 @@ agent-discord sticker delete <server-id> <sticker-id>
 - `--name <name>` - Sticker name, 2–30 characters (defaults to the filename)
 - `--description <text>` - Sticker description
 
-A sticker image must be a PNG, APNG, GIF or Lottie JSON, at most 512KB.
+A sticker image must be a PNG, APNG, GIF or a Lottie JSON document, at most
+512KB — a JPEG or WebP is refused locally, since the sticker endpoint does not
+take them. Whether a JSON file is a usable Lottie is Discord's call.
 Animated stickers are capped at 5 seconds. Lottie stickers upload only on
 guilds with the `VERIFIED` or `PARTNERED` feature.
 

@@ -7,19 +7,32 @@
  * filename is unverified input, so deriving the type from the extension means
  * one mislabelled file in a batch fails without saying which, or why.
  *
+ * A leading `{` proves the file is JSON, not that it is a usable Lottie
+ * animation — Discord decides that, and only on VERIFIED or PARTNERED guilds.
+ * The format is named for what the signature actually shows.
+ *
  * This deliberately does not check dimensions. Discord's documentation gives
  * 320x320 for stickers, but a 408x408 PNG uploads and registers fine, so a
  * local size check would refuse files the API accepts.
  */
 
-export type ExpressionFormat = 'png' | 'gif' | 'jpeg' | 'webp' | 'lottie'
+export type ExpressionFormat = 'png' | 'gif' | 'jpeg' | 'webp' | 'json'
+
+/**
+ * The two endpoints do not take the same formats, so one shared set would let a
+ * JPEG reach the sticker endpoint — declared image/jpeg, and refused with the
+ * same opaque "Invalid Asset" this check exists to avoid.
+ */
+export const EMOJI_FORMATS: ReadonlySet<ExpressionFormat> = new Set(['png', 'gif', 'jpeg', 'webp'])
+/** APNG carries the PNG signature, so it is covered by 'png'. */
+export const STICKER_FORMATS: ReadonlySet<ExpressionFormat> = new Set(['png', 'gif', 'json'])
 
 const MEDIA_TYPES: Record<ExpressionFormat, string> = {
   png: 'image/png',
   gif: 'image/gif',
   jpeg: 'image/jpeg',
   webp: 'image/webp',
-  lottie: 'application/json',
+  json: 'application/json',
 }
 
 const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
@@ -51,10 +64,11 @@ export function sniffFormat(bytes: Uint8Array): ExpressionFormat | null {
     return 'webp'
   }
 
-  // Lottie is a JSON document. Look past leading whitespace and a BOM.
-  for (let index = 0; index < Math.min(bytes.length, 8); index += 1) {
-    const byte = bytes[index]
-    if (byte === 0x7b) return 'lottie'
+  // Lottie is a JSON document. Scan past leading whitespace and a BOM until the
+  // first byte that is neither — a fixed lookahead would reject a file that is
+  // merely indented. Any binary hits a non-skippable byte almost immediately.
+  for (const byte of bytes) {
+    if (byte === 0x7b) return 'json'
     const skippable =
       byte === 0x20 ||
       byte === 0x09 ||

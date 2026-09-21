@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises'
 
-import { mediaTypeOf, sniffFormat } from './expression-format'
+import type { ExpressionFormat } from './expression-format'
+import { EMOJI_FORMATS, STICKER_FORMATS, mediaTypeOf, sniffFormat } from './expression-format'
 import { getDiscordHeaders } from './super-properties'
 import { DiscordSearchIndexNotReadyResponseSchema, DiscordSearchResponseSchema } from './types'
 import type {
@@ -388,11 +389,19 @@ export class DiscordClient {
     return files
   }
 
-  /** The media type the part declares comes from the bytes, never the filename. */
-  private mediaTypeOrThrow(image: Uint8Array): string {
+  /**
+   * The media type the part declares comes from the bytes, never the filename,
+   * and only from the formats the target endpoint actually takes — a JPEG
+   * declared to the sticker endpoint is refused by Discord as "Invalid Asset".
+   */
+  private mediaTypeOrThrow(image: Uint8Array, allowed: ReadonlySet<ExpressionFormat>): string {
     const format = sniffFormat(image)
-    if (!format) {
-      throw new DiscordError('File is not a PNG, GIF, JPEG, WebP or Lottie JSON', 'unsupported_asset')
+    if (!format || !allowed.has(format)) {
+      const names = [...allowed].join(', ')
+      throw new DiscordError(
+        format ? `File is a ${format}; this endpoint takes ${names}` : `File is not one of ${names}`,
+        'unsupported_asset',
+      )
     }
     return mediaTypeOf(format)
   }
@@ -410,7 +419,7 @@ export class DiscordClient {
   ): Promise<DiscordEmoji> {
     return this.request<DiscordEmoji>('POST', `/guilds/${guildId}/emojis`, {
       name,
-      image: `data:${this.mediaTypeOrThrow(image)};base64,${Buffer.from(image).toString('base64')}`,
+      image: `data:${this.mediaTypeOrThrow(image, EMOJI_FORMATS)};base64,${Buffer.from(image).toString('base64')}`,
       roles,
     })
   }
@@ -433,7 +442,7 @@ export class DiscordClient {
     formData.append('name', fields.name)
     formData.append('description', fields.description ?? '')
     formData.append('tags', fields.tags)
-    formData.append('file', new Blob([image], { type: this.mediaTypeOrThrow(image) }), filename)
+    formData.append('file', new Blob([image], { type: this.mediaTypeOrThrow(image, STICKER_FORMATS) }), filename)
 
     return this.requestFormData<DiscordSticker>(`/guilds/${guildId}/stickers`, formData)
   }

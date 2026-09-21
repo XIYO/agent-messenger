@@ -13,6 +13,7 @@ let clientDeleteStickerSpy: ReturnType<typeof spyOn>
 let credManagerLoadSpy: ReturnType<typeof spyOn>
 let tempDir: string
 const originalLog = console.log
+const originalExit = process.exit
 
 function pngBytes(width: number, height: number, padding = 0): Uint8Array {
   const bytes = new Uint8Array(24 + padding)
@@ -57,6 +58,7 @@ beforeEach(async () => {
 
 afterEach(async () => {
   console.log = originalLog
+  process.exit = originalExit
   await rm(tempDir, { recursive: true, force: true })
   clientListStickersSpy?.mockRestore()
   clientCreateStickerSpy?.mockRestore()
@@ -104,7 +106,7 @@ it('delete: removes the sticker by id', async () => {
 it('create: rejects a one-character name without calling the API', async () => {
   const consoleSpy = mock((_msg: string) => {})
   console.log = consoleSpy
-  const exitSpy = spyOn(process, 'exit').mockImplementation(() => {
+  spyOn(process, 'exit').mockImplementation(() => {
     throw new Error('exit')
   })
   const path = await writeTempImage('potato_13.png', pngBytes(320, 320))
@@ -113,5 +115,4 @@ it('create: rejects a one-character name without calling the API', async () => {
 
   expect(clientCreateStickerSpy).not.toHaveBeenCalled()
   expect(consoleSpy.mock.calls[0][0]).toContain('at least 2')
-  exitSpy.mockRestore()
 })

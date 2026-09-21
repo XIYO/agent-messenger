@@ -1190,7 +1190,25 @@ describe('DiscordClient', () => {
 
       await expect(
         client.createSticker('g1', { name: 'potato_02', tags: 'potato' }, junk, 'potato_02.png'),
-      ).rejects.toThrow('not a PNG, GIF, JPEG, WebP or Lottie JSON')
+      ).rejects.toThrow('not one of')
+      expect(fetchCalls).toHaveLength(0)
+    })
+
+    it('createSticker refuses a JPEG, which the sticker endpoint does not take', async () => {
+      const client = await new DiscordClient().login({ token: 'test-token' })
+      const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 0, 0, 0])
+
+      await expect(
+        client.createSticker('g1', { name: 'potato_02', tags: 'potato' }, jpeg, 'potato_02.jpg'),
+      ).rejects.toThrow('File is a jpeg')
+      expect(fetchCalls).toHaveLength(0)
+    })
+
+    it('createEmoji refuses a JSON document, which the emoji endpoint does not take', async () => {
+      const client = await new DiscordClient().login({ token: 'test-token' })
+      const json = new Uint8Array(Buffer.from('{"v":"5.5.7"}'))
+
+      await expect(client.createEmoji('g1', 'potato_01', json, 'potato_01.json')).rejects.toThrow('File is a json')
       expect(fetchCalls).toHaveLength(0)
     })
 
