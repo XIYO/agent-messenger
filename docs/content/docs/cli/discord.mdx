@@ -208,6 +208,10 @@ agent-discord emoji delete <server-id> <emoji-id>
 An emoji name may only contain letters, digits and underscores, and must be
 2–32 characters. The image must be at most 256KB.
 
+The media type is read from the file's own bytes, not its extension. A file
+whose contents are not a PNG, GIF, JPEG, WebP or Lottie JSON is refused before
+the request, because Discord answers a mismatched part with `Invalid Asset`.
+
 ### Sticker Commands
 
 Manage a server's custom stickers.
@@ -234,9 +238,13 @@ agent-discord sticker delete <server-id> <sticker-id>
 - `--name <name>` - Sticker name, 2–30 characters (defaults to the filename)
 - `--description <text>` - Sticker description
 
-A sticker image must be a PNG, APNG or GIF at exactly 320x320, or a Lottie
-JSON, and at most 512KB. Animated stickers are capped at 5 seconds. Lottie
-stickers upload only on guilds with the `VERIFIED` or `PARTNERED` feature.
+A sticker image must be a PNG, APNG, GIF or Lottie JSON, at most 512KB.
+Animated stickers are capped at 5 seconds. Lottie stickers upload only on
+guilds with the `VERIFIED` or `PARTNERED` feature.
+
+Discord documents 320x320 for stickers, but does not appear to enforce it — a
+408x408 PNG uploaded and registered unchanged. The CLI therefore checks the
+file's format, not its dimensions. Keep to 320x320 to be safe.
 
 > **Note:** Discord raises both allowances with the server's boost level —
 > static emoji 50/100/150/250 and stickers 5/15/30/60 for boost tiers 0–3.

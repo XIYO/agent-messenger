@@ -406,9 +406,10 @@ agent-discord emoji delete <server-id> <emoji-id>
 
 ### Sticker Commands
 
-Same permissions as emoji. PNG, APNG or GIF at exactly 320x320, or a Lottie
-JSON, at most 512KB. Name 2–30 characters. Lottie needs a `VERIFIED` or
-`PARTNERED` guild.
+Same permissions as emoji. PNG, APNG, GIF or Lottie JSON, at most 512KB. Name
+2–30 characters. Lottie needs a `VERIFIED` or `PARTNERED` guild. Discord
+documents 320x320 but accepted a 408x408 PNG, so the CLI does not enforce a
+size — it checks the format from the file's bytes instead of its extension.
 
 ```bash
 # List custom stickers

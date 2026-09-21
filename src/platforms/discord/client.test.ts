@@ -1100,7 +1100,7 @@ describe('DiscordClient', () => {
     })
   })
   describe('expressions', () => {
-    const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47])
+    const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
 
     it('listEmojis requests the guild emoji collection', async () => {
       const client = await new DiscordClient().login({ token: 'test-token' })
@@ -1171,14 +1171,27 @@ describe('DiscordClient', () => {
       expect(sticker.id).toBe('s1')
     })
 
-    it('createSticker sends an APNG as image/png', async () => {
+    it('createSticker types the part from the bytes, not the filename', async () => {
       const client = await new DiscordClient().login({ token: 'test-token' })
-      mockResponse({ id: 's2', name: 'potato_02', tags: 'potato', type: 2, format_type: 2 })
+      mockResponse({ id: 's2', name: 'potato_02', tags: 'potato', type: 2, format_type: 4 })
+      const gif = new Uint8Array([...Buffer.from('GIF89a'), 0, 0, 0, 0])
 
-      await client.createSticker('g1', { name: 'potato_02', tags: 'potato' }, png, 'potato_02.apng')
+      // The filename claims PNG; the bytes are a GIF. Discord answers a part
+      // whose type does not match its content with "Invalid Asset".
+      await client.createSticker('g1', { name: 'potato_02', tags: 'potato' }, gif, 'potato_02.png')
 
       const form = fetchCalls[0].options?.body as FormData
-      expect((form.get('file') as File).type).toBe('image/png')
+      expect((form.get('file') as File).type).toBe('image/gif')
+    })
+
+    it('createSticker refuses bytes that are not a supported format', async () => {
+      const client = await new DiscordClient().login({ token: 'test-token' })
+      const junk = new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7])
+
+      await expect(
+        client.createSticker('g1', { name: 'potato_02', tags: 'potato' }, junk, 'potato_02.png'),
+      ).rejects.toThrow('not a PNG, GIF, JPEG, WebP or Lottie JSON')
+      expect(fetchCalls).toHaveLength(0)
     })
 
     it('deleteSticker issues a DELETE for the sticker', async () => {

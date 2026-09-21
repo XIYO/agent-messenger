@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises'
 
+import { mediaTypeOf, sniffFormat } from './expression-format'
 import { getDiscordHeaders } from './super-properties'
 import { DiscordSearchIndexNotReadyResponseSchema, DiscordSearchResponseSchema } from './types'
 import type {
@@ -98,24 +99,6 @@ interface RateLimitBucket {
 
 const BASE_URL = 'https://discord.com/api/v10'
 
-/**
- * Discord refuses an expression upload whose part carries no media type,
- * answering "Invalid Asset". A Blob built from bytes alone has an empty type.
- */
-const EXPRESSION_CONTENT_TYPES: Record<string, string> = {
-  png: 'image/png',
-  apng: 'image/png',
-  jpg: 'image/jpeg',
-  jpeg: 'image/jpeg',
-  gif: 'image/gif',
-  webp: 'image/webp',
-  json: 'application/json',
-}
-
-function contentTypeFor(filename: string): string {
-  const extension = filename.split('.').pop()?.toLowerCase() ?? ''
-  return EXPRESSION_CONTENT_TYPES[extension] ?? 'application/octet-stream'
-}
 const MAX_RETRIES = 3
 const BASE_BACKOFF_MS = 100
 const MAX_SEARCH_INDEX_RETRY_MS = 30_000
@@ -405,6 +388,15 @@ export class DiscordClient {
     return files
   }
 
+  /** The media type the part declares comes from the bytes, never the filename. */
+  private mediaTypeOrThrow(image: Uint8Array): string {
+    const format = sniffFormat(image)
+    if (!format) {
+      throw new DiscordError('File is not a PNG, GIF, JPEG, WebP or Lottie JSON', 'unsupported_asset')
+    }
+    return mediaTypeOf(format)
+  }
+
   async listEmojis(guildId: string): Promise<DiscordEmoji[]> {
     return this.request<DiscordEmoji[]>('GET', `/guilds/${guildId}/emojis`)
   }
@@ -418,7 +410,7 @@ export class DiscordClient {
   ): Promise<DiscordEmoji> {
     return this.request<DiscordEmoji>('POST', `/guilds/${guildId}/emojis`, {
       name,
-      image: `data:${contentTypeFor(filename)};base64,${Buffer.from(image).toString('base64')}`,
+      image: `data:${this.mediaTypeOrThrow(image)};base64,${Buffer.from(image).toString('base64')}`,
       roles,
     })
   }
@@ -441,7 +433,7 @@ export class DiscordClient {
     formData.append('name', fields.name)
     formData.append('description', fields.description ?? '')
     formData.append('tags', fields.tags)
-    formData.append('file', new Blob([image], { type: contentTypeFor(filename) }), filename)
+    formData.append('file', new Blob([image], { type: this.mediaTypeOrThrow(image) }), filename)
 
     return this.requestFormData<DiscordSticker>(`/guilds/${guildId}/stickers`, formData)
   }

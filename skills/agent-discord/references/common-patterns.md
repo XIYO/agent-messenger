@@ -386,7 +386,8 @@ agent-discord emoji list "$SERVER_ID" | jq '{count, static_count}'
 
 SERVER_ID="123456789012345678"
 
-# Stickers must be exactly 320x320 and at most 512KB.
+# Discord documents 320x320 for stickers (it accepted a larger PNG in
+# practice, but stay on spec). Max 512KB.
 sips -z 320 320 ./art/potato.png --out /tmp/potato_320.png
 
 # --tags is the unicode emoji the sticker relates to, and is required.

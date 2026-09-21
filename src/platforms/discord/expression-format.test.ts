@@ -1,0 +1,49 @@
+import { describe, expect, it } from 'bun:test'
+
+import { mediaTypeOf, sniffFormat } from './expression-format'
+
+const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13])
+const gif = new Uint8Array([...Buffer.from('GIF89a'), 0, 0, 0, 0])
+const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 0, 0, 0])
+const webp = new Uint8Array([...Buffer.from('RIFF'), 0, 0, 0, 0, ...Buffer.from('WEBP')])
+const lottie = new Uint8Array(Buffer.from('  {"v":"5.5.7","fr":30}'))
+
+describe('sniffFormat', () => {
+  it('reads PNG from its signature', () => {
+    expect(sniffFormat(png)).toBe('png')
+  })
+
+  it('reads GIF, JPEG and WebP from their signatures', () => {
+    expect(sniffFormat(gif)).toBe('gif')
+    expect(sniffFormat(jpeg)).toBe('jpeg')
+    expect(sniffFormat(webp)).toBe('webp')
+  })
+
+  it('reads Lottie from leading JSON', () => {
+    expect(sniffFormat(lottie)).toBe('lottie')
+  })
+
+  it('ignores the filename entirely — a GIF named .png is still a GIF', () => {
+    // Discord answers a part whose declared type does not match its bytes
+    // with a bare "Invalid Asset".
+    expect(sniffFormat(gif)).toBe('gif')
+  })
+
+  it('returns null for bytes that match no supported format', () => {
+    expect(sniffFormat(new Uint8Array([0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07]))).toBeNull()
+  })
+
+  it('returns null for a truncated file', () => {
+    expect(sniffFormat(new Uint8Array([0x89, 0x50]))).toBeNull()
+  })
+})
+
+describe('mediaTypeOf', () => {
+  it('maps each format to the type Discord expects', () => {
+    expect(mediaTypeOf('png')).toBe('image/png')
+    expect(mediaTypeOf('gif')).toBe('image/gif')
+    expect(mediaTypeOf('jpeg')).toBe('image/jpeg')
+    expect(mediaTypeOf('webp')).toBe('image/webp')
+    expect(mediaTypeOf('lottie')).toBe('application/json')
+  })
+})
