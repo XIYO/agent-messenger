@@ -1166,6 +1166,8 @@ describe('DiscordClient', () => {
       expect(form.get('description')).toBe('a potato')
       expect(form.get('tags')).toBe('potato')
       expect((form.get('file') as File).name).toBe('potato_01.png')
+      // Discord rejects a sticker part with no media type as "Invalid Asset".
+      expect((form.get('file') as File).type).toBe('image/png')
       expect(sticker.id).toBe('s1')
     })
 

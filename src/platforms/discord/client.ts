@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises'
 
+import { contentTypeFor } from './expression-validation'
 import { getDiscordHeaders } from './super-properties'
 import { DiscordSearchIndexNotReadyResponseSchema, DiscordSearchResponseSchema } from './types'
 import type {
@@ -422,7 +423,7 @@ export class DiscordClient {
     formData.append('name', fields.name)
     formData.append('description', fields.description ?? '')
     formData.append('tags', fields.tags)
-    formData.append('file', new Blob([image]), filename)
+    formData.append('file', new Blob([image], { type: contentTypeFor(filename) }), filename)
 
     return this.requestFormData<DiscordSticker>(`/guilds/${guildId}/stickers`, formData)
   }
